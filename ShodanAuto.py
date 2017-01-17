@@ -6,10 +6,10 @@ import sys
 import shodan
 import time
 
-SHODAN_API_KEY = 'K3yGJMlnDbGCT4cahxFnmgNTx9jGkagG'
+SHODAN_API_KEY = ''
 api = shodan.Shodan (SHODAN_API_KEY)
 
-subnet    = '134.129.'
+subnet    = '127.0.'
 thirdSub  = '0'
 fourthSub = '0'
 subnetArr = []
