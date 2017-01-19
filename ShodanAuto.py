@@ -1,7 +1,3 @@
-# time complexity = O(N^2 * m)
-# N = Loop through IP values
-# m = Loop through ports to print
-
 import sys
 import shodan
 import time
@@ -14,8 +10,10 @@ thirdSub  = '0'
 fourthSub = '0'
 subnetArr = []
 
+INPUT    = sys.argv[1]
+OUTPUT   = sys.argv[2]
+
 # Open subnet file and add to array
-INPUT = sys.argv[1]
 with open (INPUT) as file:
     inputList = file.read().splitlines()
 
@@ -24,7 +22,6 @@ for row in inputList:
     subnetArr.append (entry)
 
 # Open/Create the output file
-OUTPUT = sys.argv[2]
 outfile = open (OUTPUT, 'w')
 outfile.truncate ()
 
@@ -34,31 +31,37 @@ x = subnetArr[c1][0]
 y = subnetArr[c1][1]
 i = int(x)
 
+# CSV header
+outfile.write ("IP,Hostname,Operating System,Ports\n")
+
 while(i >= int(x) and i < int(y) + 1):
     for j in range (0, 256):
         thirdSub  = i
         fourthSub = j
         IP = subnet + str(thirdSub) + '.' + str(fourthSub)
+        outString = ""
 
         print ("Scanning IP: " + IP)
 
         try:
             host = api.host (IP)
             print ("\tMATCH FOUND")
-            #time.sleep(2)
 
             # add the returned data to a file
-            outfile.write ( "\nIP: %s\nOrganization: %s\nOperating System: %s\n" % (host['ip_str'], host.get('org', 'n/a'), host.get('os', 'n/a')))
+            outfile.write ("%s,%s,%s,\"" % (host['ip_str'], host['hostnames'], host.get('os', 'n/a')))
 
+            temp = []
             for item in host['data']:
-                outfile.write ("Port: %s\nBanner: %s\n" % (item['port'], item['data']))
+                temp.append (str(item['port']))
+
+            portString = ', '.join (temp)
+            outfile.write ("%s\"\n" % (portString))
         except:
             pass
 
     try:
+        # update the subnet range
         if (i == (int(y) - 1)):
-            # update the range
-
             c1 += 1
             x = subnetArr[c1][0]
             y = subnetArr[c1][1]
