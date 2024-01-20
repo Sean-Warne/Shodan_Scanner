@@ -1,50 +1,29 @@
-import sys
+import argparse
+import ipaddress
+
 import shodan
-import time
 
-SHODAN_API_KEY = ''
-api = shodan.Shodan (SHODAN_API_KEY)
 
-subnet    = '127.0.'
-thirdSub  = '0'
-fourthSub = '0'
-subnetArr = []
+def run_shodan_scan(api_key, ip_address, output):
+    api = shodan.Shodan (api_key)
 
-INPUT    = sys.argv[1]
-OUTPUT   = sys.argv[2]
+    # parse the IP(s)
+    ips = ipaddress.ip_network(ip_address, strict=True).hosts()
 
-# Open subnet file and add to array
-with open (INPUT) as file:
-    inputList = file.read().splitlines()
+    # Open/Create the output file
+    outfile = open (output, 'w')
+    outfile.truncate ()
 
-for row in inputList:
-    entry = row.split(" ")
-    subnetArr.append (entry)
+    # CSV header
+    outfile.write ("IP,Hostname,Operating System,Ports\n")
 
-# Open/Create the output file
-outfile = open (OUTPUT, 'w')
-outfile.truncate ()
-
-# loop through and grab subsequent hosts in the subnet
-c1 = 0
-x = subnetArr[c1][0]
-y = subnetArr[c1][1]
-i = int(x)
-
-# CSV header
-outfile.write ("IP,Hostname,Operating System,Ports\n")
-
-while(i >= int(x) and i < int(y) + 1):
-    for j in range (0, 256):
-        thirdSub  = i
-        fourthSub = j
-        IP = subnet + str(thirdSub) + '.' + str(fourthSub)
-        outString = ""
-
-        print ("Scanning IP: " + IP)
+    for ip in ips:
+        ip = str(ip)
+        
+        print ("Scanning IP: " + ip)
 
         try:
-            host = api.host (IP)
+            host = api.host (ip)
             print ("\tMATCH FOUND")
 
             # add the returned data to a file
@@ -59,18 +38,37 @@ while(i >= int(x) and i < int(y) + 1):
         except:
             pass
 
+    # close file when finished
+    outfile.close ()
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('api_key', help='Shodan.io API key generated under account settings')
+    parser.add_argument('ip_address', help='IP Address to scan with or without a subnet mask')
+    parser.add_argument('output', default=None, help='Path and filename of output file')
+
     try:
-        # update the subnet range
-        if (i == (int(y) - 1)):
-            c1 += 1
-            x = subnetArr[c1][0]
-            y = subnetArr[c1][1]
-
-            i += int(x) - (int(subnetArr[c1 - 1][1]) - 1)
+        args = parser.parse_args()
     except:
-        pass
+        parser.print_help()
+        exit
 
-    i += 1
+    return args
 
-# close file when finished
-outfile.close ()
+
+def main(
+        api_key,
+        ip_address,
+        output
+):
+    run_shodan_scan(api_key, ip_address, output)
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    main(
+        args.api_key,
+        args.ip_address,
+        args.output
+    )
